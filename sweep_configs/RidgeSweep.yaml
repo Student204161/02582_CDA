@@ -1,5 +1,5 @@
 program: main.py  # Assuming your main script is main.py
-name: LassoSweep  # Give your sweep a descriptive name
+name: RidgeSweep  # Give your sweep a descriptive name
 method: bayes
 metric:
   goal: minimize
@@ -7,5 +7,5 @@ metric:
 parameters:
   alpha:
     min: 0.000001
-    max: 1.0
+    max: 0.5
     distribution: log_uniform_values

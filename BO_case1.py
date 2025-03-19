@@ -98,18 +98,19 @@ if __name__ == "__main__":
         elastic_sweep_config = yaml.safe_load(file)
 
     elastic_sweep_id = wandb.sweep(elastic_sweep_config, project="case1")
-    wandb.agent(elastic_sweep_id, objective_elastic, count=15)
+    wandb.agent(elastic_sweep_id, objective_elastic, count=20)
 
     # Ridge sweep
     with open('sweep_configs/RidgeSweep.yaml', 'r') as file:
         ridge_sweep_config = yaml.safe_load(file)
     
     ridge_sweep_id = wandb.sweep(ridge_sweep_config, project="case1")
-    wandb.agent(ridge_sweep_id, objective_ridge, count=15)
+    wandb.agent(ridge_sweep_id, objective_ridge, count=20)
 
     # Lasso sweep
     with open('sweep_configs/LassoSweep.yaml', 'r') as file:
         lasso_sweep_config = yaml.safe_load(file)
     
     lasso_sweep_id = wandb.sweep(lasso_sweep_config, project="case1")
+    wandb.agent(lasso_sweep_id, objective_lasso, count=20)
     
