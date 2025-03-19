@@ -11,23 +11,44 @@ import pandas as pd
 import numpy as np
 import yaml
 
+CV_SPLITS = 10
+MAX_ITER = 100000
 
-def objective_elasticnet():
-    with wandb.init(config=wandb.config,mode="offline"):
+def objective_elastic(config=None):
+    with wandb.init(config=config):
         config = wandb.config
         alpha = config.alpha
         l1_ratio = config.l1_ratio
+        model = ElasticNet(alpha=alpha, l1_ratio=l1_ratio,max_iter=MAX_ITER, random_state=42)
+        scores = cross_val_score(model, X_train, y_train, cv=CV_SPLITS, scoring='neg_mean_squared_error')
+        mean_score = np.sqrt(-np.mean(scores))
+        wandb.log({"root_mean_mse": mean_score})
+        return mean_score
 
-        model = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=42)
-        scores = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_squared_error')
-        mean_score = -np.sqrt(-np.mean(scores))
-        wandb.log({"neg_root_mean_mse": mean_score})
-        print(mean_score)
+def objective_ridge(config=None):
+    with wandb.init(config=config):
+        config = wandb.config
+        alpha = config.alpha
+        model = Ridge(alpha=alpha,max_iter=MAX_ITER, random_state=42)
+        scores = cross_val_score(model, X_train, y_train, cv=CV_SPLITS, scoring='neg_mean_squared_error')
+        mean_score = np.sqrt(-np.mean(scores))
+        wandb.log({"alpha": config.alpha, "root_mean_mse": mean_score})
+        return mean_score
+
+def objective_lasso(config=None):
+    with wandb.init(config=config):
+        config = wandb.config
+        alpha = config.alpha
+        model = Lasso(alpha=alpha, random_state=42)
+        scores = cross_val_score(model, X_train, y_train, cv=CV_SPLITS, scoring='neg_mean_squared_error')
+        mean_score = np.sqrt(-np.mean(scores))
+        wandb.log({"alpha": config.alpha, "root_mean_mse": mean_score})
         return mean_score
 
 
+
 # Load data and preprocess
-data = pd.read_csv('Case1Data.csv')
+data = pd.read_csv('/home/khalil/Desktop/4_sem/computational_data_science/02582_CDA/case1Data.csv')
 data = data.drop('C_02', axis=1)
 y = np.array(data['y'])
 X_nan = np.array(data.drop('y', axis=1))
@@ -69,20 +90,26 @@ def fill_nan(X, method='mean'):
     return X
 
 X = fill_nan(X_nan, method='mean')
-X_train_global, X_test, y_train_global, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-X_train = X_train_global
-y_train = y_train_global
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 if __name__ == "__main__":
-    # # Initialize W&B project
-    wandb.init(mode="offline")
+    # Elastic sweep
+    with open('sweep_configs/ElasticSweep.yaml', 'r') as file:
+        elastic_sweep_config = yaml.safe_load(file)
 
-    #load sweep config
-    with open('sweep.yaml', 'r') as file:
-        sweep_config = yaml.safe_load(file)
+    elastic_sweep_id = wandb.sweep(elastic_sweep_config, project="case1")
+    wandb.agent(elastic_sweep_id, objective_elastic, count=15)
+
+    # Ridge sweep
+    with open('sweep_configs/RidgeSweep.yaml', 'r') as file:
+        ridge_sweep_config = yaml.safe_load(file)
     
-    # define sweep
-    sweep_id = wandb.sweep(sweep_config, project="case1")
+    ridge_sweep_id = wandb.sweep(ridge_sweep_config, project="case1")
+    wandb.agent(ridge_sweep_id, objective_ridge, count=15)
 
-    wandb.agent(sweep_id, function=objective_elasticnet, count=2)
+    # Lasso sweep
+    with open('sweep_configs/LassoSweep.yaml', 'r') as file:
+        lasso_sweep_config = yaml.safe_load(file)
+    
+    lasso_sweep_id = wandb.sweep(lasso_sweep_config, project="case1")
+    

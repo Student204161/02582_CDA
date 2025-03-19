@@ -1,0 +1,15 @@
+program: main.py  # Assuming your main script is main.py
+name: ElasticSweep  # Give your sweep a descriptive name
+method: bayes
+metric:
+  goal: minimize
+  name: root_mean_mse
+parameters:
+  alpha:
+    min: 0.000001
+    max: 1.0
+    distribution: log_uniform_values
+  l1_ratio:
+    min: 0.0
+    max: 1.0
+    distribution: uniform
