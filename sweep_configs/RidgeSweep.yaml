@@ -7,5 +7,5 @@ metric:
 parameters:
   alpha:
     min: 0.000001
-    max: 0.5
-    distribution: log_uniform_values
+    max: 5.0
+    distribution: uniform

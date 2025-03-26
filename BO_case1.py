@@ -48,12 +48,14 @@ def objective_lasso(config=None):
 
 
 # Load data and preprocess
-data = pd.read_csv('/home/khalil/Desktop/4_sem/computational_data_science/02582_CDA/case1Data.csv')
+data = pd.read_csv('case1Data.csv')
 data = data.drop('C_02', axis=1)
 y = np.array(data['y'])
 X_nan = np.array(data.drop('y', axis=1))
 
 from sklearn.linear_model import LinearRegression
+
+from scipy import stats
 
 def fill_nan(X, method='mean'):
     """Fill NaN values in a 2D array using the specified method"""
@@ -61,11 +63,16 @@ def fill_nan(X, method='mean'):
         column_means = np.nanmean(X, axis=0)
         nan_matrix = np.isnan(X)
         X[nan_matrix] = np.take(column_means, np.where(nan_matrix)[1])
+    elif method == 'round_mean':
+        column_means = np.nanmean(X, axis=0)
+        nan_matrix = np.isnan(X)
+        X[nan_matrix] = np.take(column_means, np.where(nan_matrix)[1])
+        #last 4 columns are categorical, round off to nearest
+        X[:, -4:] = np.round(X[:, -4:])
     elif method == 'regression':
         nan_matrix = np.isnan(X)
         column_means = np.nanmean(X, axis=0)
         X[nan_matrix] = np.take(column_means, np.where(nan_matrix)[1])
-
         for col in range(X.shape[1]):
             missing_rows = np.where(nan_matrix[:, col])[0]
 
@@ -86,10 +93,28 @@ def fill_nan(X, method='mean'):
 
                     X_test = X[missing_rows][:, correlated_indices]
                     X[missing_rows, col] = model.predict(X_test)
-
     return X
 
-X = fill_nan(X_nan, method='mean')
+X = fill_nan(X_nan, method='round_mean')
+
+def standardize_data(X):
+    #split X into continuous and categorical
+    X[:, -4:] = X[:, -4:].astype(int)
+
+    #standardize continuous features
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X[:, :-4] = scaler.fit_transform(X[:, :-4])
+
+    # One-hot encode the categorical features
+    from sklearn.preprocessing import OneHotEncoder
+    enc = OneHotEncoder()
+    X_cat = enc.fit_transform(X[:, -4:]).toarray()
+    X = np.concatenate((X[:, :-4], X_cat), axis=1)
+    return X
+
+X = standardize_data(X)
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 if __name__ == "__main__":
@@ -100,17 +125,17 @@ if __name__ == "__main__":
     elastic_sweep_id = wandb.sweep(elastic_sweep_config, project="case1")
     wandb.agent(elastic_sweep_id, objective_elastic, count=20)
 
-    # Ridge sweep
-    with open('sweep_configs/RidgeSweep.yaml', 'r') as file:
-        ridge_sweep_config = yaml.safe_load(file)
+    # # Ridge sweep
+    # with open('sweep_configs/RidgeSweep.yaml', 'r') as file:
+    #     ridge_sweep_config = yaml.safe_load(file)
     
-    ridge_sweep_id = wandb.sweep(ridge_sweep_config, project="case1")
-    wandb.agent(ridge_sweep_id, objective_ridge, count=20)
+    # ridge_sweep_id = wandb.sweep(ridge_sweep_config, project="case1")
+    # wandb.agent(ridge_sweep_id, objective_ridge, count=20)
 
-    # Lasso sweep
-    with open('sweep_configs/LassoSweep.yaml', 'r') as file:
-        lasso_sweep_config = yaml.safe_load(file)
+    # # Lasso sweep
+    # with open('sweep_configs/LassoSweep.yaml', 'r') as file:
+    #     lasso_sweep_config = yaml.safe_load(file)
     
-    lasso_sweep_id = wandb.sweep(lasso_sweep_config, project="case1")
-    wandb.agent(lasso_sweep_id, objective_lasso, count=20)
+    # lasso_sweep_id = wandb.sweep(lasso_sweep_config, project="case1")
+    # wandb.agent(lasso_sweep_id, objective_lasso, count=20)
     
