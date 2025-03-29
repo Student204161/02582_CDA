@@ -1,5 +1,5 @@
 program: main.py  # Assuming your main script is main.py
-name: ElasticSweep  # Give your sweep a descriptive name
+name: ElasticSweepAll  # Give your sweep a descriptive name
 method: bayes
 metric:
   goal: minimize

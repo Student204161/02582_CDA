@@ -1,5 +1,5 @@
 program: main.py  # Assuming your main script is main.py
-name: RidgeSweep  # Give your sweep a descriptive name
+name: RidgeSweepAll  # Give your sweep a descriptive name
 method: bayes
 metric:
   goal: minimize
